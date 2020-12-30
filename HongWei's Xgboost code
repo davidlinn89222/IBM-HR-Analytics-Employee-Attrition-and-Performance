@@ -1,0 +1,120 @@
+library(tidyverse)
+library(caret)
+library(rpart)
+library(xgboost)
+library(fastDummies)
+library(data.table)
+library(mlr)
+library(Ckmeans.1d.dp)
+
+hr=read.csv("/Users/lihongwei/Desktop/Statistic Learn/WA_Fn-UseC_-HR-Employee-Attrition.csv")
+View(hr)
+# 刪掉 9 DailyRate", "EmployeeCount", "HourlyRate", "MonthlyRate","StandardHours", "Over18" 
+
+hr=hr[,-c(4,9,13,20,27,22,28)]
+row.names(hr) <- hr[,8]
+hr <- hr[,-8]
+
+set.seed(1)
+train_index <- sample(1:nrow(hr),0.8*nrow(hr))
+train <- hr[train_index,]
+test <- hr[-train_index,]
+
+setDT(train)
+setDT(test)
+
+#using one hot encoding
+labels <- train$Attrition 
+ts_label <- test$Attrition
+new_tr <- model.matrix(~.+0,data = train[,-c("Attrition"),with=F]) 
+new_ts <- model.matrix(~.+0,data = test[,-c("Attrition"),with=F])
+
+#convert factor to numeric
+labels <- as.numeric(as.factor(labels))-1
+ts_label <- as.numeric(as.factor(ts_label))-1
+
+dtrain <- xgb.DMatrix(data = new_tr,label = labels) 
+dtest <- xgb.DMatrix(data = new_ts,label=ts_label)
+
+params <- list(booster='gbtree',
+               objective='binary:logistic',
+               eta=0.09,           #learning rate
+               max_depth=8,       #tree depth
+               min_child_weight=1.,
+               #max_delta_step=0,
+               subsample=0.7,       #percentage data use in every iteration
+               colsample_bytree=0.7,  #percentage covariate use in every iteration
+               lambda=0.8, 
+               alpha=0.6)
+
+set.seed(100)
+xgbcv <- xgb.cv( params = params, data = dtrain, 
+                 nrounds = 300, 
+                 nfold = 5, 
+                 showsd = T, 
+                 stratified = T, 
+                 #print.every.n = 10, 
+                 #early.stop.round = 20, 
+                 maximize = F) 
+
+which.min(xgbcv$evaluation_log$test_error_mean)
+
+xgb_model <- xgb.train(params=params,
+                       data=dtrain,
+                       nrounds=271,
+                       eval_metric='auc',
+                       print_every_n=10,
+                       watchlist=list(val=dtest, train=dtrain),
+                       early_stopping_rounds=10,
+                       maximize=T)
+
+xgb_prob <- predict(xgb_model, dtest)
+xgb_pred <- ifelse(xgb_prob > 0.5,1,0)
+
+confusionMatrix (factor(xgb_pred), factor(ts_label)) 
+
+mat <- xgb.importance (feature_names = colnames(new_tr),model = xgb_model)
+xgb.ggplot.importance (importance_matrix = mat[1:20]) 
+
+# grid search
+searchGridCol <- expand.grid(eta=seq(0.05,0.09,by=0.02),
+                             max_depth=seq(5,8,by=1),
+                             subsample=seq(0.5, 0.7, by=0.1),
+                             colsample_bytree=seq(0.5, 0.7, by=0.1),
+                             lambda=seq(0.6, 1.0, by=0.2),
+                             alpha=seq(0.6, 1.0, by=0.2))
+
+ntrees=30
+
+system.time(AUCHyperparameters <- apply(searchGridCol, 1, function(parameterList){
+    
+    currentEta <- parameterList[["eta"]]
+    currentDepth <- parameterList[["max_depth"]]
+    currentSubsampleRate <- parameterList[["subsample"]]
+    currentColsampleRate <- parameterList[["colsample_bytree"]]
+    currentLambda <- parameterList[["lambda"]]
+    currentAlpha <- parameterList[["alpha"]]
+    
+    xgboostModelCV <- xgb.cv(data=dtrain, nrounds=ntrees, nfold=5, showsd=TRUE, 
+                             metrics = "auc", booster = "gbtree",
+                             "eval_metric"="auc", "objective"="binary:logistic",
+                             "eta"=currentEta, "max_depth"=currentDepth,                                
+                             "subsample"=currentSubsampleRate, "colsample_bytree"=currentColsampleRate,
+                             "lambda"=currentLambda, "alpha"=currentAlpha,
+                             print_every_n=10, 
+                             early_stopping_rounds=10)
+    
+    xvalidationScores <- as.data.frame(xgboostModelCV$evaluation_log)
+    #auc <- tail(xvalidationScores$test_auc_mean, 2)
+    auc <- xvalidationScores$test_auc_mean[xgboostModelCV$best_ntreelimit]
+    #xgbcv$evaluation_log$test_auc_mean[xgbcv$best_ntreelimit]
+    output <- return(c(auc, currentEta, currentDepth, currentSubsampleRate, 
+                       currentColsampleRate, currentLambda, currentAlpha
+    ))}))
+
+output <- as.data.frame(t(AUCHyperparameters))
+varnames <- c('TestAUC', 'eta', 'Depth', 'SubSampleRate', 
+              'ColSampRate', 'Lambda', 'Alpha')
+names(output) <- varnames
+output[which.max(output$TestAUC), ]
+
