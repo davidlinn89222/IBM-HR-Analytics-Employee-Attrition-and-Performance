@@ -1,0 +1,204 @@
+install.packages("caret", dependencies = c("Depends", "Suggests"))
+install.packages("Rmisc") # 繪圖參數
+install.packages("tidyverse") # ggpairs
+install.packages("fastDummies")
+install.packages("rpart.plot")
+install.packages("tree")
+library(ggplot2) 
+library(GGally) #ggpirs
+library(Rmisc)
+library(tidyverse)
+library(fastDummies)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(tree)
+
+
+#刪除dailyrate、employeecount、hourly rate、monthlyrate、over18、standardhours、stockoptionlevel
+# employeenumber當變數名稱
+
+#---------------一開始刪除沒有幫助的變數--------------------------------------------------------------------------#
+hr <- read.csv("/Users/songchengen/Desktop/碩一/統計學習/統學project/WA_Fn-UseC_-HR-Employee-Attrition.csv")
+
+hr <- hr[,c(-4,-9,-13,-20,-22,-27,-28)] #刪除dailyrate、employeecount、hourly rate、monthlyrate、over18、standardhours
+#-----------------------------------------------------------------------------------------------------------------#
+
+
+#------將employeenumber當成變數名稱，將employeenumber刪除變數--------#
+row.names(hr) <- hr[,8]
+hr <- hr[,-8]
+#--------------------------------------------------------------------#
+
+#-------改類別變數，for 繪圖，之後再重新讀資料-----------------------#
+hr$Education <- as.factor(hr$Education)
+hr$EnvironmentSatisfaction <- as.factor(hr$EnvironmentSatisfaction)
+hr$JobInvolvement <- as.factor(hr$JobInvolvement)
+hr$JobLevel <- as.factor(hr$JobLevel)
+hr$JobSatisfaction <- as.factor(hr$JobSatisfaction)
+hr$PerformanceRating <- as.factor(hr$PerformanceRating)
+hr$RelationshipSatisfaction <- as.factor(hr$RelationshipSatisfaction)
+hr$StockOptionLevel <- as.factor(hr$StockOptionLevel)
+hr$WorkLifeBalance <- as.factor(hr$WorkLifeBalance)
+#--------------------------------------------------------------------#
+
+
+#---------------------17個類別、11個數值型-----------------------------#
+str(hr)
+#--------------------------------------------------------------------#
+
+
+#-------------------長條圖---------------------------------------------------------------------------------------------#
+p1 <- ggplot(hr,aes(x=Attrition),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("Attrition")
+
+p2 <- ggplot(hr,aes(x=BusinessTravel),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("BusinessTravel")
+
+p3 <- ggplot(hr,aes(x=Department),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("Department")
+
+p4 <- ggplot(hr,aes(x=Education))+
+      geom_bar(fill="red",col="blue")+
+      ggtitle("Education")+
+      scale_x_discrete(labels = c("Below College","College","Bachelor","Master","Doctor"))
+
+p5 <- ggplot(hr,aes(x=EducationField),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("EducationField")
+
+p6 <- ggplot(hr,aes(x=EnvironmentSatisfaction),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("EnvironmentSatisfaction")+
+      scale_x_discrete(labels=c('Low','Medium','High','Very High'))
+
+p7 <- ggplot(hr,aes(x=Gender),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("Gender")
+      
+
+p8 <-  ggplot(hr,aes(x=JobInvolvement ),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("JobInvolvement")+
+      scale_x_discrete(labels=c('Low','Medium','High','Very High'))
+
+p9 <- ggplot(hr,aes(x=JobLevel),stat="bin")+
+      geom_bar(fill="red",col="blue")+ggtitle("JobLevel")
+
+p10 <- ggplot(hr,aes(x=JobRole),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("JobRole")
+
+p11 <- ggplot(hr,aes(x=JobSatisfaction),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("JobSatisfaction")+
+       scale_x_discrete(labels=c('Low','Medium','High','Very High'))
+
+p12 <- ggplot(hr,aes(x=MaritalStatus),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("MaritalStatus")
+
+p13 <- ggplot(hr,aes(x=OverTime),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("OverTime")
+
+p14 <- ggplot(hr,aes(x=RelationshipSatisfaction),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("RelationshipSatisfaction")+
+       scale_x_discrete(labels=c('Low','Medium','High','Very High'))
+
+p15 <- ggplot(hr,aes(x=WorkLifeBalance),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("WorkLifeBalance")+
+       scale_x_discrete(labels=c('Bad','Good','Better','Best'))
+
+p16 <- ggplot(hr,aes(x=PerformanceRating),stat="bin")+
+       geom_bar(fill="red",col="blue")+ggtitle("PerformanceRating")+
+       scale_x_discrete(labels=c('Excellent','Outstanding'))
+
+multiplot(p1,p2,cols=2)
+multiplot(p3,p4,cols=2)
+p5
+multiplot(p6,p7,cols=2)
+multiplot(p8,p9,cols=2)
+p10
+multiplot(p11,p12,p13,cols=3)
+multiplot(p14,p15,p16,cols=3)
+#----------------------------------------------------------#
+
+
+#------------------箱型圖----------------------------------#
+par(mfrow=c(2,2))
+boxplot(Age~Attrition,data=hr,main="Age",col=c("red","blue"))
+boxplot(DistanceFromHome~Attrition,data = hr,main="DistanceFromHome",col=c("red","blue"))
+boxplot(MonthlyIncome~Attrition,data=hr,main="MonthlyIncome",col=c("red","blue"))
+boxplot(NumCompaniesWorked~Attrition,data=hr,main="NumCompaniesWorked",col=c("red","blue"))
+
+par(mfrow=c(2,2))
+boxplot(PercentSalaryHike~Attrition,data=hr,main="PercentSalaryHike",col=c("red","blue"))
+boxplot(TotalWorkingYears~Attrition,data=hr,main="TotalWorkingYears",col=c("red","blue"))
+boxplot(TrainingTimesLastYear~Attrition,data=hr,main="TrainingTimesLastYear",col=c("red","blue"))
+boxplot(YearsAtCompany~Attrition,data=hr,main="YearsAtCompany",col=c("red","blue"))
+
+par(mfrow=c(1,3))
+boxplot(YearsInCurrentRole~Attrition,data=hr,main="YearsInCurrentRole",col=c("red","blue"))
+boxplot(YearsSinceLastPromotion~Attrition,data=hr,main="YearsSinceLastPromotion",col=c("red","blue"))
+boxplot(YearsWithCurrManager~Attrition,data=hr,main="YearsWithCurrManager",col=c("red","blue"))
+
+#----------------------------------------------------------#
+
+#--------------------重新讀入資料--------------------------#
+hr <- read.csv("/Users/songchengen/Desktop/碩一/統計學習/統學project/WA_Fn-UseC_-HR-Employee-Attrition.csv")
+hr <- hr[,c(-4,-9,-13,-20,-22,-27,-28)]
+row.names(hr) <- hr[,8]
+hr <- hr[,-8]
+#----------------------------------------------------------#
+
+
+
+#-------------------CART wiht rpart---------------------#
+set.seed(1)
+train <- sample(1:length(hr$Attrition),ceiling(0.8*length(hr$Attrition)))
+hr_train <- hr[train,]
+hr_test <- hr[-train,]
+
+# 可調整參數
+# minsplit：每一個node最少要幾個data
+# minbucket：在末端的node上最少要幾個data
+# cp：complexity parameter 決策樹長到一定程度後，分類的準確度會降低。因此建立決策樹太複雜時會進行剪枝。
+# CART演算法會依照CP,當增加一個節點後其分類的純度變化量小於樹複雜度變化cp倍時，則必須減去。
+
+# maxdepth：Tree的深度
+
+# cp : alpha , 預設=0.01
+
+searchgrid <- expand.grid(minsplit=seq(5,20,by=1),
+                          minbucket=seq(10,30,by=1),
+                          cp=seq(0.001,0.01,by=0.001),
+                          maxdepth=seq(3,7,by=1))
+output <- matrix(NA,nrow = nrow(searchgrid),ncol=5)
+
+for (i in 1:nrow(searchgrid))
+                           {
+               fit = rpart(Attrition~., data = hr_train,
+                           minsplit=searchgrid$minsplit[i],
+                           minbucket=searchgrid$minbucket[i],
+                           maxdepth=searchgrid$maxdepth[i],
+                           cp = searchgrid$cp[i])
+               min <- which.min(fit$cptable[,'xerror'])
+               output[i,] <-c(searchgrid$minsplit[i],
+                              searchgrid$minbucket[i],
+                              searchgrid$maxdepth[i],
+                              searchgrid$cp[i],
+                              fit$cptable[min,'xerror']
+                              ) 
+                           }
+
+#-------------------train model--------------------#
+
+output[which.min(output[,5]),]
+
+fit_pru <- rpart(Attrition~., data = hr_train,
+                 minsplit=output[which.min(output[,5]),1],
+                 minbucket=output[which.min(output[,5]),2],
+                 maxdepth=output[which.min(output[,5]),3],
+                 cp = output[which.min(output[,5]),4],
+                 )
+
+rpart.plot(fit_pru)
+
+pred <- predict(fit_pru, hr_test, type = "class")
+table(hr_test$Attrition,pred)
+mean(hr_test$Attrition==pred)
+
+#-----------------------------------------------------#
