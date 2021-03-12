@@ -7,7 +7,7 @@ library(MASS)
 library(e1071)
 hrdata=read.csv("C:/Users/Nick/Desktop/WA_Fn-UseC_-HR-Employee-Attrition (1).csv")
 names(hrdata)[1]="Age"
-#­×ÅÜ¼Æ«¬ºA
+#ä¿®è®Šæ•¸å‹æ…‹
 hrdata$Attrition=as.numeric(as.factor(hrdata$Attrition))
 hrdata$Attrition=as.factor(hrdata$Attrition)
 hrdata$Education=as.factor(hrdata$Education)
@@ -22,13 +22,13 @@ hrdata$JobSatisfaction =as.factor(hrdata$JobSatisfaction)
 hrdata$PerformanceRating=as.factor(hrdata$PerformanceRating)
 hrdata$RelationshipSatisfaction=as.factor(hrdata$RelationshipSatisfaction)
 hrdata$StockOptionLevel=as.factor(hrdata$StockOptionLevel)
-#§R°£ÅÜ¼Æ«áªº¸ê®Æ
+#åˆªé™¤è®Šæ•¸å¾Œçš„è³‡æ–™
 hr=hrdata[,-c(4,9,13,20,22,27,28)]
 hr$WorkLifeBalance=as.factor(hr$WorkLifeBalance)
 rownames(hr)=hr [,8]
 hr=hr[,-c(8)]
 
-#¬İAttrition»P¦UÃş§OÅÜ¼Æªºtable,correlation
+#çœ‹Attritionèˆ‡å„é¡åˆ¥è®Šæ•¸çš„table,correlation
 # t1 <- table(hr$Attrition,hr$BusinessTravel);t1
 # t2 <- table(hr$Attrition,hr$Department);t2 
 # t3 <- table(hr$Attrition,hr$Education);t3 
@@ -61,7 +61,7 @@ hr=hr[,-c(8)]
 # corrplot(corMat, method="ellipse")
 # corrplot.mixed(corMat, lower="ellipse", upper="number",
 #                order = "hclust", tl.col="black")
-#¤Á¸ê®Æ
+#åˆ‡è³‡æ–™
 
 set.seed(1)
 train=sample(1:nrow(hr),nrow(hr)*0.8)
@@ -71,7 +71,7 @@ testing_data=hr[-train,]
 #par(mfrow=c(1,4))
 
 #Naive Bayes
-#¥ş³¡ÅÜ¼Æ
+#å…¨éƒ¨è®Šæ•¸
 nb.fit <- naiveBayes(Attrition~., data=training_data)
 nb.pred <- predict(nb.fit, testing_data,k=10)
 table(nb.pred, testing_data$Attrition)
@@ -91,7 +91,7 @@ mean(nb.pred == testing_data$Attrition)
 
 
 
-#¥Îcaret package°µNB( ) 
+#ç”¨caret packageåšNB( ) 
 
 #confusion Matrix
 features <- setdiff(names(training_data),"Attrition")
